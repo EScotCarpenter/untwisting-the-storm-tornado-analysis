@@ -9,3 +9,6 @@ The code can be examined inside the [RMD file](Tornadoes.qmd), and the finished 
 Changes in categorization methods have led researchers to often exclude data for tornadoes before 1973, when modern scales were introduced. How have implementations of, and changes to, categorization scales impacted how tornadoes are classified? Are current research findings regarding the timing and location of tornadoes in the United States accurate? ANOVA and Tukey HSD tests provided statistically significant results which verify that there are distinct eras in tornado classification and these eras should be examined separately. Research findings on regions prone to tornadoes were verified and the timing of high-scale (F/EF2+) tornados were examined. Of all F/EF2+ tornadoes that occurred in Tornado Alley, 71% of them occurred at night and of all F/EF2+ tornadoes that occurred in Dixie Alley, 53% occurred at night. These findings can lead to further research into the occurences of the most dangerous tornadoes and which measures should be taken to mitigate risk to human life.
 
 ## Acknowledgements
+[NOAA](https://www.spc.noaa.gov/wcm/#data})
+
+[TidyTuesday](https://github.com/rfordatascience/tidytuesday)
