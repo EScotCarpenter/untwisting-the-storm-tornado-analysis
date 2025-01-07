@@ -1,0 +1,374 @@
+---
+title: "Untwisting the Storm"
+subtitle: "A statistical analysis on tornado categorization, locations, and occurrence patterns"
+abstract: |
+  Changes in categorization methods have led researchers to often exclude data for tornadoes before 1973, when modern scales were introduced. How have implementations of, and changes to, categorization scales impacted how tornadoes are classified? Are current research findings regarding the timing and location of tornadoes in the United States accurate? ANOVA and Tukey HSD tests provided statistically significant results which verify that there are distinct eras in tornado classification and these eras should be examined separately. Research findings on regions prone to tornadoes were verified and the timing of high-scale (F/EF2+) tornados were examined. Of all F/EF2+ tornadoes that occurred in Tornado Alley, 71% of them occurred at night and of all F/EF2+ tornadoes that occurred in Dixie Alley, 53% occurred at night. These findings can lead to further research into the occurences of the most dangerous tornadoes and which measures should be taken to mitigate risk to human life.
+title-block-banner: true
+date: "May 5, 2024"
+author:
+  - name: Elbert Scot Carpenter
+citation: true
+bibliography: references.bib
+csl: apa.csl
+
+execute:
+  echo: false
+  message: false
+  warning: false
+
+format:
+  html:
+    output-file: "UntwistingTheStorm.html"
+    output-ext: "html"
+    number-sections: true
+    embed-resources: true
+    code-fold: true
+    code-summary: "Show the code"
+    code-tools: true
+---
+
+```{r}
+#| label: setup
+#| include: false
+# Set seed and import libraries.
+set.seed(424424)
+library(tidyverse)
+library(here)
+library(ggplot2)
+library(devtools)
+library(tidytuesdayR)
+library(kableExtra)
+library(dplyr)
+library(rnaturalearth)
+library(knitr)
+```
+
+```{r}
+#| label: dataload
+# Load in Tornado csv.
+df <- readr::read_csv(here::here("raw_tornado.csv"))
+# Add feature to main df.
+df<- df %>%
+  mutate(era = case_when(
+    yr <1973 ~ "N",
+    yr >= 1973 & yr <= 2006 ~ "F",
+    yr >= 2007 ~ "EF"
+  ))
+```
+This paper will explore the *Tornadoes* dataset from @tidytuesday derived from data provided by @NOAA2024 which gives detailed information about reported tornadoes in the United States between 1950 to 2022. Before the exploration of the dataset begins, a review of literature will provide a brief overview of tornadogenesis, and the history of how tornadoes are estimated and categorized into different scores on a scale based on the amount of damage done to the area of the tornado’s occurrence. The literature will also provide insight into the physical locations and the time of day that tornadoes occur. The exploration of the dataset will check the assumptions made in the review of literature and provide statistically significant results to back up those assumptions. Once the assumptions have been verified, an examination of the dataset will provide insights on locations and time of day that high F/EF-scale tornadoes occur.
+
+## Review of the literature
+
+Tornadoes form from a specific type of thunderstorm called a supercell. @Fischeretal2024 describes the process of tornadogenesis during a supercell thunderstorm. A supercell thunderstorm begins when warm air becomes trapped underneath cold air. The warm air begins to rise into the cold air creating an updraft of warm air and a downdraft of cold air. This causes the warm air in the updraft to begin to spin and create surface level rotation. This updraft of spinning warm air against the downdraft of cold air is what eventually creates the tornado and the faster that this process takes place, the larger the tornado can become [-@Fischeretal2024].
+
+Due to tornadoes being an act of destructive nature, the exact location and path that a tornado will take place is unknown. This causes a challenge in acquiring real time data and readings on these events as they rarely occur in a location that has all the necessary instrumentation to accurately measure the wind speed at that location. In 1971 the Fujita scale (F-scale) was implemented which categorized tornadoes on a scale between 0 and 5. These categorizations were based on the estimated wind speed which is measured by observing the damage done to the surroundings after a tornado takes place [-@Edwardsetal2013]. The F-scale was then used to estimate the categories of tornadoes that occurred pre-1971. These estimations were done by analyzing photographs and newspaper articles covering the events [-@Edwardsetal2013]. In 2007, the F-scale was then replaced by the Enhanced Fujita (EF-scale) which was implemented to give a more accurate assessment of damage [-@Edwardsetal2013]. Another advancement in tornado analysis has come in the form of Doppler radar that was implemented in 1988, which @Edwardsetal2013 claims has increased the frequency of tornadoes that are being reported as more low-EF-scale tornadoes are being noticed compared to before this technological advancement.
+
+The EF-scale is an important tool in understanding the damage that tornadoes can cause but it is not without fault. As mentioned in @Edwardsetal2013, tornadoes that occurred prior to 1971 were estimated based on second-hand accounts and this led to overestimations in damage. @ColemanandDixon2014 examine the efficacy of the F/EF-scale and note that while the F-scale was implemented in 1971, it was not until 1973 where the assessment of damage a tornado caused would occur “in the near immediate aftermath" [-@ColemanandDixon2014]. This essentially causes all ratings that happened prior to 1973 to be only estimates of prior estimations, and as such is left out of much analysis research [-@ColemanandDixon2014].
+
+Any area that is able to produce a supercell thunderstorm is vulnerable to the risk of tornadoes. In the United States (US), tornadoes predominantly occur in the central part of the US in the Greater Plains area and in the Southeastern part of the US. @ColemanandDixon2014 describe the tornadoes in the Greater Plains area as part of “Tornado Alley” [-@ColemanandDixon2014] and @Dixonetal2011 describe the tornadoes that occur in the Southeastern part of the US as “Dixie Alley" [-@Dixonetal2011]. Through spatial analysis of tornado paths, @Dixonetal2011 has found that the tornadoes that occur in Dixie Alley are not significantly different from those that occur in Tornado Alley. However, due to the population density in Dixie Alley, the tornadoes that occur in this region pose a higher risk to human life and are overrated in reporting. Additionally, @ColemanandDixon2014 concluded that the tornadoes in Dixie Alley occur at night at a higher proportion that those that occur in Tornado Alley [-@ColemanandDixon2014].
+
+## Research problem
+
+The past research of tornadoes done by @ColemanandDixon2014 has stated that prior to 1973 the estimates of tornadoes on the F/EF-scale have been unreliable. This claim will be evaluated using an ANOVA test and if a statistically significant difference is found, a Tukey’s HSD test will be run to determine where the differences are. Results of these tests will be statistically significant if their *p*-values are below 0.05. Additionally, the results of these tests will determine which part of the dataset will be used for further analysis.
+$$H_0: \mu_N=\mu_F=\mu_{EF}$$
+$$H_A:\mu_N\neq\mu_F\neq\mu_{EF}$$
+
+Due to advances in meteorological technology the reporting of tornadoes has increased significantly. As stated by @Edwardsetal2013 these advances have increased the frequency of low-scale (F/EF-scale 0 to 1) tornadoes being reported, inflating the numbers of total tornadoes reported. This claim will be investigated by examining the correlation between the years of the technology advancements and the number of low F/EF-scale tornadoes that have been reported. The number of high magnitude tornadoes will also be investigated through the examination of correlation between the years and number of high-scale (F/EF2+ scale) tornadoes.
+
+The threat of a tornado exists anywhere that a supercell tornado can occur. @ColemanandDixon2014 and @Dixonetal2011 claim that the areas in the US that are the most susceptible to these types of storms and subsequent tornadoes are the Great Plains and Southeast. These claims will be investigated through descriptive statistics and visualizations. 
+
+
+## Design
+
+The *Tornadoes* dataset that will be analyzed uses data from the National Oceanic and Atmospheric Administration (NOAA) [-@NOAA2024] and TidyTuesday [-@tidytuesday] cleaned and provided the data for this analysis. Relevant features of this dataset include the date and time of the tornado given together (`dateime_utc`) as well as separate (`yr`, `mo`, `dy`, `date`, `time`), the state that the tornado occurred in (`st`), the F/EF scale number of each tornado (`mag`) which scales from 0 to 5, and whether the tornado data is based on an estimate (`fc`). 
+
+To conduct the ANOVA different eras of estimation were added as features. The variable `era` was created by assigning a single character to the variable having the years prior to 1973 denoted as ‘N’, the years between 1973 and 2007 to be denoted as ‘F’, and years after 2007 to be denoted as ‘EF.’ 
+
+
+## Results
+
+```{r}
+#| label: scatter_data
+# Create dataframe for all reported tornadoes scatterplot, ANOVA and Tukey.
+yearTotalsAll <- df %>%
+  group_by(yr, era) %>%
+  summarise(count = n())
+```
+
+### Comparing Differences in Estimating Eras 
+
+```{r}
+#| label: fig-Figure_1
+#| include: true
+#| fig.cap: "Scatterplot of all reported tornadoes per year in the US from 1950 and 2022. The blue dashed line indicates the start of the F-scale era and the red dashed line indicates the start of the EF-scale era."
+
+# Scatterplot of Total Tornadoes reported 1950-2022
+ggplot(yearTotalsAll, aes(yr, count)) +
+  geom_point() +
+  geom_line()+
+  geom_vline(xintercept = 1973, linetype = 'dashed', color = 'red') +
+  geom_vline(xintercept = 2007, linetype = 'dashed', color = 'blue') +
+  annotate('text', x = 1971, y = 310, label = "F-Scale", angle = 90, color = 'red') +
+  annotate('text', x = 2005, y = 340, label = "EF-Scale", angle = 90, color = 'blue') +
+  labs(x = "Year", y = "Number of Tornadoes",
+       subtitle = "Total Number of Recorded Tornadoes per Year in US from 1950 to 2022") +
+  ggtitle("Figure 1")
+```
+
+@fig-Figure_1 shows the total number of tornadoes reported each year. Examining this graph shows an increase of tornado reporting as the years increase. Also noted on the graph is the start of each of the different eras that will be tested through ANOVA. This ANOVA will compare the amount of tornadoes reported within the eras and determine if there is a significant difference between them. Recall our hypothesis:
+$$H_0: \mu_N=\mu_F=\mu_{EF}$$
+$$H_A:\mu_N\neq\mu_F\neq\mu_{EF}$$
+
+**Table 1. ANOVA Results**
+```{r}
+#| label: ANOVA
+
+# Run ANOVA test and grab the summary to make a kable() out of.
+eraAOV <- aov(count ~ era, yearTotalsAll)
+anovaDF <- data.frame(summary(eraAOV)[[1]])
+
+```
+
+`r knitr::kable(anovaDF, caption = "ANOVA Result")`
+
+The results of the ANOVA (p = $0.0991e^{-10}$), which is effectively 0, and below our $\alpha$ of 0.05, indicating that the null hypothesis that the means of these groups are equal is rejected. Now to determine which groups differ a Tukey's HSD test will be run.
+
+```{r}
+#| label: Tukeys
+
+# Perform tukeys and grab summary to make kable() out of.
+tukey_eras <- TukeyHSD(eraAOV)
+tukey_df <- data.frame(tukey_eras[[1]])
+
+```
+
+**Table 2. Tukey's HSD Results**
+`r knitr::kable(tukey_df, caption = "Tukey HSD Result")`
+
+The results of the Tukey's HSD indicate that there is a significant difference between all of the groups. The *p*-value (*p*= 0.049734) between eras *F* and *EF* is extremely close to the $\alpha$ of 0.05 and the difference should be examined further. Developing a better method in dividing these era groups could yield a clearer result. However, there is enough evidence to exclude values from before 1973 and those that were estimated during this time.
+
+### Comparison in Frequency of Low and High F/EF-scale Magnitudes
+
+```{r}
+#| label: mag_setup
+
+# Remove NA values from mag and exclude data from before 1973.
+df <- df[!is.na(df$mag),]
+df <- df %>%
+  filter(!era == 'N')
+
+# Get dataframe to compare magnitudes for scatterplot.
+yearTotalMags <- df %>%
+  group_by(yr, mag) %>%
+  summarise(count = n())
+
+# Get dataframes for low and high magnitudes.
+yearTotalLow <- yearTotalMags %>%
+  filter(mag <= 1) %>%
+  group_by(yr) %>%
+  summarise(totals = sum(count))
+
+yearTotalHigh <- yearTotalMags %>%
+  filter(mag >= 2) %>%
+  group_by(yr) %>%
+  summarise(totals = sum(count))
+
+# Get correlations for the different magnitudes
+lowCor <- round(cor(yearTotalLow$yr, 
+               y = yearTotalLow$totals), 2)
+
+highCor <- round(cor(yearTotalHigh$yr,
+                yearTotalHigh$totals),2)
+```
+```{r}
+#| label: fig-Figure_2
+#| fig.cap: "Scatterplot displaying the number of reported Tornadoes in the US by their associated F/EF-scale magnitude."
+#| include: true
+
+ggplot(yearTotalMags, aes(yr, count, group = as.factor(mag), color = mag)) +
+  geom_point() +
+  geom_line() +
+  scale_colour_viridis_c(option = 'D') +
+  labs(x = "Year", y = "Number of Reported Tornadoes", color = "F/EF-scale",
+       subtitle = "Reported Tornadoes in US per Year by F/EF-scale Between 1973-2022") +
+  ggtitle("Figure 2")
+
+```
+@fig-Figure_2 shows the total amount of reported tornadoes that occurred at each magnitude of the F/EF-scale. There appears to be a spike in F/EF 0 tornadoes around the year 1990. This indicates an increased frequency of low-scale tornadoes being reported. The F/EF2+ tornadoes appear to remain about the same throughout the years.
+
+```{r}
+#| label: fig-Figure_3
+#| fig-cap: "a.The number of low-scale tornadoes reported in the US between 1973 and 2022. b. The number of high-scale tornadoes reported in the US between 1973 and 2022."
+#| fig-subcap: 
+#|  - "F/EF0-1"
+#|  - "F/EF2+"
+#| layout-ncol: 2
+
+ggplot(yearTotalLow, aes(yr, totals)) +
+  geom_point() +
+  geom_line() +
+  geom_smooth(method = 'lm', se = FALSE, color = 'green')+
+  labs(x = "Years", y = "Reported F/EF0-1 Tornadoes",
+       subtitle = "F/EF0-1 Tornadoes Reported in US between 1973 and 2022 (r = 0.57)") +
+  ggtitle("Figure 3a.")
+
+ggplot(yearTotalHigh, aes(yr, totals)) +
+  geom_point() +
+  geom_line() +
+  geom_smooth(method = 'lm', se = FALSE, color = 'red') +
+  labs(x = "Years", y = "Reported F/EF2+ Tornadoes", 
+       subtitle = "F/EF2+ Tornadoes Reported in US between 1973 and 2022 (r = -0.52)") +
+  ggtitle("Figure 3b.")
+```
+
+@fig-Figure_3 shows scatterplots of the different grouped low and high magnitudes. Figure 3a shows the low-scale F/EF0-1 tornadoes reported and there appears to be a positive trend in the number of these types of tornadoes being reported with a correlation coefficient of `r lowCor`. Figure 3b shows the high-scale F/EF2+ tornadoes reported and there appears to be a negative trend in the number of these types of tornadoes being reported with a correlation coefficient of `r highCor`.
+
+### Comparison of Tornadoes in Tornado Alley and Dixie Alley
+
+After examining and verifying the assumptions made by previous studies, the decision to continue the analysis on tornadoes will be restricted to those that occurred from 1973 to 2022 and have a F/EF-scale magnitude of 2 or higher.
+```{r}
+#| label: dataset_change
+
+# Set up the dataset for the Choropleth map.
+tornadoAnalysis <- df %>%
+  filter(fc == "FALSE" & !era == "N" & mag >= 2) %>%
+  filter(!st %in% c('VI','PR'))
+
+# Clean values, put loss in terms of millions, and adjust state names to match choro map.
+tornadoAnalysis <- tornadoAnalysis[!is.na(tornadoAnalysis$loss),]
+tornadoAnalysis$loss <- (tornadoAnalysis$loss / 1000000000)
+tornadoAnalysis$st <- paste("US.", tornadoAnalysis$st, sep="")
+
+# Nevada has had zero F/EF2+ tornados, this row is added to have a full map
+choroStates <- tornadoAnalysis
+blank <- data.frame(om = NA, yr = NA, mo = NA, dy = NA, date = NA, time = NA, 
+                    tz = NA, datetime_utc = NA, st = "US.NV", stf = NA, mag = NA,inj = NA,
+                    fat = 0, loss = 0, slat = NA, slon = NA, elat = NA, elon = NA, 
+                    len = NA, wid = NA, ns = NA, sn = NA, f1 = NA, f2 = NA, f3 = NA,
+                    f4 = NA, fc = NA, era = NA)
+
+choroStates <- rbind(choroStates, blank)
+
+choroStateYear <- choroStates %>%
+  group_by(st, yr) %>%
+  summarise(entries = n()) %>%
+  summarise(totalEntries = sum(entries))
+
+# Setup for Choropleth for total stats
+choroStats <- choroStates %>%
+  group_by(st) %>%
+  summarise( totalFats = sum(fat), totalLoss = sum(loss))
+```
+```{r}
+#| label: choropleth
+
+# Set up the Map object.
+statesMap <- ne_states(country = "united states of america")
+
+# Merger
+choroMapTotal <- merge(statesMap, choroStateYear, by.x = 'code_hasc', by.y = "st")
+
+```
+```{r}
+#| label: fig-Figure_4
+#| fig.cap: "Choropleth map of the US with the total amount of F/EF2+ tornadoes reported between 1973 and 2022."
+
+ggplot(choroMapTotal, aes(fill = totalEntries)) +
+  geom_sf()+
+  coord_sf(xlim = c(-123, -69), ylim = c(24, 50))+
+  scale_fill_viridis_c(option = "D") +
+  labs(x = "Longitude", y = "Latitude", subtitle = "Total F/EF2+ Tornado Reportings In US (1973-2022)", fill = "Total") +
+  ggtitle("Figure 4")
+
+```
+@fig-Figure_4 shows that the highest amount of F/EF2+ scale tornadoes occur starting from Texas and moving North toward Iowa, and then from Texas moving East towards Alabama. These states are consistent with the areas known as "Tornado Alley" (Texas, Oklahoma, Kansas, Nebraska, Missouri, Illonis, and Iowa) and "Dixie Alley" (Arkansas, Louisiana, Mississippi, and Alabama).
+
+```{r}
+#| label: times_setup
+
+# Make lists to filter states
+tornStates <- c("US.TX", "US.OK", "US.KS", "US.NE", "US.MO", "US.IL", "US.IA")
+dixieStates <- c("US.AL", "US.LA", "US.AR", "US.MS")
+
+# Create new dataframe with just the two types of states, and add alley feature.
+alleys <- tornadoAnalysis %>%
+  filter(tornadoAnalysis$st %in% tornStates | tornadoAnalysis$st %in% dixieStates) %>%
+  mutate(alley = ifelse(st %in% tornStates, 'TA', 'DA')) %>%
+  group_by(datetime_utc, alley) %>%
+  summarise(count = n())
+
+# Create column for UTC time.
+alleys$hour <- hour(alleys$datetime_utc)
+
+# Create Dataframes for each times plot.
+timesGP <- alleys %>%
+  filter(alley == "TA") %>%
+  group_by(hour) %>%
+  summarise(count = sum(count), .groups = 'drop')
+  
+timesDi <- alleys %>%
+  filter(alley == 'DA') %>%
+  group_by(hour) %>%
+  summarise(count = sum(count), .groups = 'drop')
+```
+```{r}
+#| label: fig-Figure_5
+#| fig-cap: "a.Distribution of the number of F/EF2+ tornadoes in Tornado Alley by the time of report. b.Distribution of the number of F/EF2+  tornadoes in Dixie Alley by the time of report."
+#| fig-subcap: 
+#|  - "Tornado Alley"
+#|  - "Dixie Alley"
+#| layout-ncol: 2
+
+ggplot(timesGP, aes(as.factor(hour), count, fill = count)) +
+  geom_bar(stat = 'identity') +
+  scale_fill_viridis_c(option = 'D') +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  theme(legend.position = 'none') +
+  labs(x = "Time of Tornado Measured in Hour Intervals (UTC-5)", y = "Reported Tornadoes",
+       subtitle = "Reported Tornado Alley F/EF2+ Tornadoes in Hour Intervals (UTC-5) (1973-2022)") +
+  ggtitle("Figure 5a")
+
+ggplot(timesDi, aes(as.factor(hour), count, fill = count)) +
+  geom_bar(stat = 'identity') +
+  scale_fill_viridis_c(option = 'D')+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  theme(legend.position = 'none') +
+  labs(x = "Time of Tornado Measured in Hour Intervals (UTC-5)", y = "Reported Tornadoes",
+       subtitle = "Reported Dixie Alley F/EF2+ Tornadoes in Hour Intervals (UTC-5) (1973-2022)") +
+  ggtitle("Figure 5b")
+```
+@fig-Figure_5 shows the distribution of times that reported F/EF2+ tornadoes occurred in Tornado Alley and Dixie Alley. Figure 5a shows F/EF2+ tornadoes that occur in Tornado Alley occur most often between 9PM (21:00:00 UTC-5) and 12AM (00:00:00 UTC-5) and are fairly consistent in happening between the hours of 6PM (18:00:00 UTC-5) and 3AM (03:00:00). Whereas Figure 5b shows the F/EF2+ tornadoes that occur in Dixie Alley occur most often between 8PM (20:00:00 UTC-5) and 1AM (01:00:00 UTC-5) but occur relatively frequently throughout the day.
+```{r}
+#| label: night_setup
+
+# Add night feature.
+alleys <- alleys %>%
+  mutate(night = ifelse(hour >= 21 | hour <=5, 'Night', 'Day'))
+
+# Create contingency table.
+contTable <- table(alleys$alley, alleys$night)
+
+# Get proportions per row.
+propTable <- round(prop.table(contTable, margin = 1),2)
+
+```
+**Table 3. Proportions of Tornado Alley and Dixie Alley Tornadoes During the Day and Night**
+```{r}
+#| label: Table_3
+
+knitr::kable(propTable)
+
+```
+Table 3 shows the proportions of F/EF2+ tornadoes that occur in both Tornado Alley and Dixie Alley during the day and night. Of the F/EF2+ tornadoes that occur in Tornado Alley, 71% of them occur during the night compared to 53% of the same type of tornadoes that occur at night in Dixie Alley.
+
+## Discussion {#sec-discussion}
+
+The ANOVA and Tukey's HSD tests provided statistically significant results which verified the assumptions of other researchers to exclude pre-1973 tornados from analysis. Furthermore, the correlations show an increase in lower strength tornados being reported and a decrease in higher strength tornados. This is likely due to the advances in technology, especially radar, that allows for the observation and tracking of tornados in remote areas. This could also be related to better categorization of the EF-scale compared to the F-scale and pre-1973 categorization.
+
+Exploration of the dataset also verified that certain locations are more prone to high F/EF-scale tornadoes, specifically Tornado Alley and Dixie Alley in the US. However, analysis of the dataset contradicted previous researchers’ findings about the timing of tornados. This dataset shows that Tornado Alley is more prone to high EF-scale night tornadoes than Dixie Alley. However, other research might have included lower-scale tornadoes in their analysis, which would explain this discrepancy of findings.
+
+Overall, this research can have significant implications for future planning to mitigate fatalities and damage from tornadoes. Understanding when and where tornadoes are most likely to occur can aid in early warning systems being developed where they are most needed. Additional research into fatalities would be beneficial to better understand when fatalities are most likely to occur, and therefore determine what additional warning systems could be put into place. If the data shows that fatalities are more likely to happen at night, that could imply that current warning systems are not sufficient and additional warning methods should be implemented. Analyzing the types of shelters available during high-fatality tornadoes compared to low-fatality could also inform urban planning and rebuilding efforts.
+
+Having a better understanding of lower-scale tornadoes is also important as climate change impacts weather patterns. Understanding current patterns of tornado formation is vital to later understanding how climate change is impacting the frequency and severity of tornadoes in Tornado Alley and Dixie Alley.
+
+## References
